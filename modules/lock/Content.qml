@@ -20,6 +20,7 @@ RowLayout {
             implicitHeight: weather.implicitHeight
 
             topLeftRadius: Tokens.rounding.large
+            bottomLeftRadius: Tokens.rounding.large
             radius: Tokens.rounding.small
             color: Colours.tPalette.m3surfaceContainer
 
@@ -27,31 +28,6 @@ RowLayout {
                 id: weather
 
                 rootHeight: root.height
-            }
-        }
-
-        StyledRect {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-
-            radius: Tokens.rounding.small
-            color: Colours.tPalette.m3surfaceContainer
-
-            Fetch {}
-        }
-
-        StyledClippingRect {
-            Layout.fillWidth: true
-            implicitHeight: media.implicitHeight
-
-            bottomLeftRadius: Tokens.rounding.large
-            radius: Tokens.rounding.small
-            color: Colours.tPalette.m3surfaceContainer
-
-            Media {
-                id: media
-
-                lock: root.lock
             }
         }
     }
@@ -64,28 +40,18 @@ RowLayout {
         Layout.fillWidth: true
         spacing: Tokens.spacing.normal
 
-        StyledRect {
+        StyledClippingRect {
             Layout.fillWidth: true
-            implicitHeight: resources.implicitHeight
+            implicitHeight: media.implicitHeight
 
             topRightRadius: Tokens.rounding.large
-            radius: Tokens.rounding.small
-            color: Colours.tPalette.m3surfaceContainer
-
-            Resources {
-                id: resources
-            }
-        }
-
-        StyledRect {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-
             bottomRightRadius: Tokens.rounding.large
             radius: Tokens.rounding.small
             color: Colours.tPalette.m3surfaceContainer
 
-            NotifDock {
+            Media {
+                id: media
+
                 lock: root.lock
             }
         }

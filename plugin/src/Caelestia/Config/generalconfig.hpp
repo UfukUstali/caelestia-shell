@@ -40,10 +40,12 @@ class GeneralIdle : public ConfigObject {
                 { u"timeout"_s, 300 },
                 { u"idleAction"_s, u"dpms off"_s },
                 { u"returnAction"_s, u"dpms on"_s },
+                { u"onlyWhenLocked"_s, true },
             }),
             vmap({
                 { u"timeout"_s, 600 },
                 { u"idleAction"_s, QStringList{ u"systemctl"_s, u"suspend-then-hibernate"_s } },
+                { u"onlyWhenLocked"_s, true },
             }),
         })
 
@@ -91,8 +93,6 @@ class GeneralConfig : public ConfigObject {
 
     CONFIG_GLOBAL_PROPERTY(QString, logo)
     CONFIG_PROPERTY(bool, showOverFullscreen, false)
-    CONFIG_PROPERTY(qreal, mediaGifSpeedAdjustment, 300)
-    CONFIG_PROPERTY(qreal, sessionGifSpeed, 0.7)
     CONFIG_SUBOBJECT(GeneralApps, apps)
     CONFIG_SUBOBJECT(GeneralIdle, idle)
     CONFIG_SUBOBJECT(GeneralBattery, battery)
