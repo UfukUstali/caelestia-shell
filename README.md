@@ -299,8 +299,6 @@ For example, to disable the bar on DP-1:
     "general": {
         "logo": "caelestia",
         "showOverFullscreen": false,
-        "mediaGifSpeedAdjustment": 300,
-        "sessionGifSpeed": 0.7,
         "apps": {
             "terminal": ["foot"],
             "audio": ["pavucontrol"],
@@ -650,8 +648,6 @@ For example, to disable the bar on DP-1:
         "hideDelay": 2000
     },
     "paths": {
-        "mediaGif": "root:/assets/bongocat.gif",
-        "sessionGif": "root:/assets/kurukuru.gif",
         "noNotifsPic": "root:/assets/dino.png",
         "lockNoNotifsPic": "root:/assets/dino.png",
         "wallpaperDir": "~/Pictures/Wallpapers",
@@ -660,6 +656,8 @@ For example, to disable the bar on DP-1:
     "services": {
         "audioIncrement": 0.1,
         "brightnessIncrement": 0.1,
+        "minBrightness": 0.0,
+        "maxBrightness": 1.0,
         "maxVolume": 1.0,
         "defaultPlayer": "Spotify",
         "gpuType": "",

@@ -35,7 +35,7 @@ Item {
         muted = Audio.muted;
         sourceVolume = Audio.sourceVolume;
         sourceMuted = Audio.sourceMuted;
-        brightness = root.monitor?.brightness ?? 0;
+        brightness = root.monitor?.uiBrightness ?? 0;
     }
 
     visible: offsetScale < 1
@@ -75,9 +75,9 @@ Item {
     }
 
     Connections {
-        function onBrightnessChanged(): void {
+        function onUiBrightnessChanged(): void {
             root.show();
-            root.brightness = root.monitor?.brightness ?? 0;
+            root.brightness = root.monitor?.uiBrightness ?? 0;
         }
 
         target: root.monitor

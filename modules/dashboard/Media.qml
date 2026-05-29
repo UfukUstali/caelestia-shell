@@ -18,7 +18,7 @@ Item {
     required property DrawerVisibilities visibilities
     readonly property bool needsKeyboard: lyricMenuOpen
 
-    readonly property real nonAnimHeight: Math.max(cover.implicitHeight + Tokens.sizes.dashboard.mediaVisualiserSize * 2, lyricMenuOpen ? lyricMenu.implicitHeight : details.implicitHeight, bongocat.implicitHeight) + Tokens.padding.large * 2
+    readonly property real nonAnimHeight: Math.max(cover.implicitHeight + Tokens.sizes.dashboard.mediaVisualiserSize * 2, lyricMenuOpen ? lyricMenu.implicitHeight : details.implicitHeight) + Tokens.padding.large * 2
     readonly property real detailsHeightWithoutLyrics: details.implicitHeight - lyricsViewInDetails.implicitHeight
 
     property bool lyricMenuOpen: false
@@ -52,7 +52,7 @@ Item {
         }
     }
 
-    implicitWidth: cover.implicitWidth + Tokens.sizes.dashboard.mediaVisualiserSize * 2 + details.implicitWidth + details.anchors.leftMargin + bongocat.implicitWidth + bongocat.anchors.leftMargin * 2 + Tokens.padding.large * 2
+    implicitWidth: cover.implicitWidth + Tokens.sizes.dashboard.mediaVisualiserSize * 2 + details.implicitWidth + details.anchors.leftMargin + Tokens.padding.large * 2
     implicitHeight: nonAnimHeight
 
     Behavior on implicitHeight {
@@ -373,45 +373,6 @@ Item {
         }
     }
 
-    ColumnLayout {
-        id: leftSection
-
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.verticalCenterOffset: playerChanger.parent == leftSection ? -playerChanger.height : 0
-        anchors.left: details.right
-        anchors.leftMargin: Tokens.spacing.normal
-
-        visible: lyricMenu.height === 0 || opacity > 0
-        opacity: lyricMenu.height === 0 ? 1 : 0
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: Tokens.anim.durations.normal
-                easing.type: Easing.OutCubic
-            }
-        }
-
-        Item {
-            id: bongocat
-
-            implicitWidth: visualiser.width
-            implicitHeight: visualiser.height
-
-            AnimatedImage {
-                anchors.centerIn: parent
-
-                width: visualiser.width * 0.75
-                height: visualiser.height * 0.75
-
-                playing: Players.active?.isPlaying ?? false
-                speed: Audio.beatTracker.bpm / Config.general.mediaGifSpeedAdjustment // qmllint disable unresolved-type
-                source: Paths.absolutePath(Config.paths.mediaGif)
-                asynchronous: true
-                fillMode: AnimatedImage.PreserveAspectFit
-            }
-        }
-    }
-
     LyricMenu {
         id: lyricMenu
 
@@ -437,7 +398,7 @@ Item {
     RowLayout {
         id: playerChanger
 
-        parent: !root.lyricsShowingDebounced ? details : leftSection
+        parent: details
         Layout.alignment: Qt.AlignHCenter
         spacing: Tokens.spacing.small
 

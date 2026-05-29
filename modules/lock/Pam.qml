@@ -25,6 +25,8 @@ Scope {
 
         if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
             passwd.start();
+        } else if (event.key === Qt.Key_Escape) {
+            buffer = "";
         } else if (event.key === Qt.Key_Backspace) {
             if (event.modifiers & Qt.ControlModifier) {
                 buffer = "";

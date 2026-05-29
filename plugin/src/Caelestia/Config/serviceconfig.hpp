@@ -27,6 +27,8 @@ class ServiceConfig : public ConfigObject {
     CONFIG_GLOBAL_PROPERTY(int, visualiserBars, 45)
     CONFIG_GLOBAL_PROPERTY(qreal, audioIncrement, 0.1)
     CONFIG_GLOBAL_PROPERTY(qreal, brightnessIncrement, 0.1)
+    CONFIG_PROPERTY(qreal, minBrightness, 0.0)
+    CONFIG_PROPERTY(qreal, maxBrightness, 1.0)
     CONFIG_GLOBAL_PROPERTY(qreal, maxVolume, 1.0)
     CONFIG_GLOBAL_PROPERTY(bool, smartScheme, true)
     CONFIG_GLOBAL_PROPERTY(QString, defaultPlayer, u"Spotify"_s)

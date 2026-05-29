@@ -48,7 +48,7 @@ Item {
 
             PathAngleArc {
                 centerX: cover.x + cover.width / 2
-                centerY: cover.y + cover.height / 2
+                centerY: cover.y + cover.height / 1.1
                 radiusX: (cover.width + root.Tokens.sizes.dashboard.mediaProgressThickness) / 2 + root.Tokens.spacing.small
                 radiusY: (cover.height + root.Tokens.sizes.dashboard.mediaProgressThickness) / 2 + root.Tokens.spacing.small
                 startAngle: -90 - root.Tokens.sizes.dashboard.mediaProgressSweep / 2
@@ -68,7 +68,7 @@ Item {
 
             PathAngleArc {
                 centerX: cover.x + cover.width / 2
-                centerY: cover.y + cover.height / 2
+                centerY: cover.y + cover.height / 1.1
                 radiusX: (cover.width + root.Tokens.sizes.dashboard.mediaProgressThickness) / 2 + root.Tokens.spacing.small
                 radiusY: (cover.height + root.Tokens.sizes.dashboard.mediaProgressThickness) / 2 + root.Tokens.spacing.small
                 startAngle: -90 - root.Tokens.sizes.dashboard.mediaProgressSweep / 2
@@ -81,136 +81,116 @@ Item {
         }
     }
 
-    StyledClippingRect {
-        id: cover
+    Column {
+        id: content
 
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.margins: Tokens.padding.large + Tokens.sizes.dashboard.mediaProgressThickness + Tokens.spacing.small
+        anchors.centerIn: parent
 
-        implicitHeight: width
-        color: Colours.tPalette.m3surfaceContainerHigh
-        radius: Infinity
+        spacing: Tokens.spacing.normal
+        width: parent.implicitWidth
 
-        MaterialIcon {
-            anchors.centerIn: parent
+        StyledClippingRect {
+            id: cover
 
-            grade: 200
-            text: "art_track"
-            color: Colours.palette.m3onSurfaceVariant
-            font.pointSize: (parent.width * 0.4) || 1
-        }
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: parent.width - (Tokens.padding.large + Tokens.sizes.dashboard.mediaProgressThickness + Tokens.spacing.small) * 2
+            implicitHeight: width
+            color: Colours.tPalette.m3surfaceContainerHigh
+            radius: Infinity
 
-        Image {
-            id: image
+            MaterialIcon {
+                anchors.centerIn: parent
 
-            anchors.fill: parent
+                grade: 200
+                text: "art_track"
+                color: Colours.palette.m3onSurfaceVariant
+                font.pointSize: (parent.width * 0.4) || 1
+            }
 
-            source: Players.getArtUrl(Players.active)
-            asynchronous: true
-            fillMode: Image.PreserveAspectCrop
-            sourceSize: {
-                const dpr = (QsWindow.window as QsWindow)?.devicePixelRatio ?? 1;
-                return Qt.size(width * dpr, height * dpr);
+            Image {
+                id: image
+
+                anchors.fill: parent
+
+                source: Players.getArtUrl(Players.active)
+                asynchronous: true
+                fillMode: Image.PreserveAspectCrop
+                sourceSize: {
+                    const dpr = (QsWindow.window as QsWindow)?.devicePixelRatio ?? 1;
+                    return Qt.size(width * dpr, height * dpr);
+                }
             }
         }
-    }
 
-    StyledText {
-        id: title
+        StyledText {
+            id: title
 
-        anchors.top: cover.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.topMargin: Tokens.spacing.normal
+            anchors.horizontalCenter: parent.horizontalCenter
 
-        animate: true
-        horizontalAlignment: Text.AlignHCenter
-        text: (Players.active?.trackTitle ?? qsTr("No media")) || qsTr("Unknown title")
-        color: Colours.palette.m3primary
-        font.pointSize: Tokens.font.size.normal
+            animate: true
+            horizontalAlignment: Text.AlignHCenter
+            text: (Players.active?.trackTitle ?? qsTr("No media")) || qsTr("Unknown title")
+            color: Colours.palette.m3primary
+            font.pointSize: Tokens.font.size.normal
 
-        width: parent.implicitWidth - Tokens.padding.large * 2
-        elide: Text.ElideRight
-    }
-
-    StyledText {
-        id: album
-
-        anchors.top: title.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.topMargin: Tokens.spacing.small
-
-        animate: true
-        horizontalAlignment: Text.AlignHCenter
-        text: (Players.active?.trackAlbum ?? qsTr("No media")) || qsTr("Unknown album")
-        color: Colours.palette.m3outline
-        font.pointSize: Tokens.font.size.small
-
-        width: parent.implicitWidth - Tokens.padding.large * 2
-        elide: Text.ElideRight
-    }
-
-    StyledText {
-        id: artist
-
-        anchors.top: album.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.topMargin: Tokens.spacing.small
-
-        animate: true
-        horizontalAlignment: Text.AlignHCenter
-        text: (Players.active?.trackArtist ?? qsTr("No media")) || qsTr("Unknown artist")
-        color: Colours.palette.m3secondary
-
-        width: parent.implicitWidth - Tokens.padding.large * 2
-        elide: Text.ElideRight
-    }
-
-    Row {
-        id: controls
-
-        anchors.top: artist.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.topMargin: Tokens.spacing.smaller
-
-        spacing: Tokens.spacing.small
-
-        PlayerControl {
-            icon: "skip_previous"
-            canUse: Players.active?.canGoPrevious ?? false
-            onClicked: Players.active?.previous()
+            width: parent.width - Tokens.padding.large * 2
+            elide: Text.ElideRight
         }
 
-        PlayerControl {
-            icon: Players.active?.isPlaying ? "pause" : "play_arrow"
-            canUse: Players.active?.canTogglePlaying ?? false
-            onClicked: Players.active?.togglePlaying()
+        StyledText {
+            id: album
+
+            anchors.horizontalCenter: parent.horizontalCenter
+
+            animate: true
+            horizontalAlignment: Text.AlignHCenter
+            text: (Players.active?.trackAlbum ?? qsTr("No media")) || qsTr("Unknown album")
+            color: Colours.palette.m3outline
+            font.pointSize: Tokens.font.size.small
+
+            width: parent.width - Tokens.padding.large * 2
+            elide: Text.ElideRight
         }
 
-        PlayerControl {
-            icon: "skip_next"
-            canUse: Players.active?.canGoNext ?? false
-            onClicked: Players.active?.next()
+        StyledText {
+            id: artist
+
+            anchors.horizontalCenter: parent.horizontalCenter
+
+            animate: true
+            horizontalAlignment: Text.AlignHCenter
+            text: (Players.active?.trackArtist ?? qsTr("No media")) || qsTr("Unknown artist")
+            color: Colours.palette.m3secondary
+
+            width: parent.width - Tokens.padding.large * 2
+            elide: Text.ElideRight
         }
-    }
 
-    AnimatedImage {
-        id: bongocat
+        Row {
+            id: controls
 
-        anchors.top: controls.bottom
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.topMargin: Tokens.spacing.small
-        anchors.bottomMargin: Tokens.padding.large
-        anchors.margins: Tokens.padding.large * 2
+            anchors.horizontalCenter: parent.horizontalCenter
 
-        playing: Players.active?.isPlaying ?? false
-        speed: Audio.beatTracker.bpm / Config.general.mediaGifSpeedAdjustment // qmllint disable unresolved-type
-        source: Paths.absolutePath(Config.paths.mediaGif)
-        asynchronous: true
-        fillMode: AnimatedImage.PreserveAspectFit
+            spacing: Tokens.spacing.small
+
+            PlayerControl {
+                icon: "skip_previous"
+                canUse: Players.active?.canGoPrevious ?? false
+                onClicked: Players.active?.previous()
+            }
+
+            PlayerControl {
+                icon: Players.active?.isPlaying ? "pause" : "play_arrow"
+                canUse: Players.active?.canTogglePlaying ?? false
+                onClicked: Players.active?.togglePlaying()
+            }
+
+            PlayerControl {
+                icon: "skip_next"
+                canUse: Players.active?.canGoNext ?? false
+                onClicked: Players.active?.next()
+            }
+        }
     }
 
     component PlayerControl: StyledRect {

@@ -13,8 +13,8 @@ Scope {
     required property Lock lock
     readonly property bool enabled: !GlobalConfig.general.idle.inhibitWhenAudio || !Players.list.some(p => p.isPlaying)
 
-    function handleIdleAction(action: var): void {
-        if (!action)
+    function handleIdleAction(action: var, onlyWhenLocked: bool): void {
+        if (!action || onlyWhenLocked && !lock.lock.locked)
             return;
 
         if (action === "lock")
@@ -45,7 +45,7 @@ Scope {
             enabled: root.enabled && (modelData.enabled ?? true)
             timeout: modelData.timeout
             respectInhibitors: modelData.respectInhibitors ?? true
-            onIsIdleChanged: root.handleIdleAction(isIdle ? modelData.idleAction : modelData.returnAction)
+            onIsIdleChanged: root.handleIdleAction(isIdle ? modelData.idleAction : modelData.returnAction, modelData.onlyWhenLocked)
         }
     }
 }

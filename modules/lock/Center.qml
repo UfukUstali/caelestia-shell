@@ -109,6 +109,16 @@ ColumnLayout {
         }
     }
 
+    StyledText {
+        Layout.alignment: Qt.AlignHCenter
+
+        text: SysInfo.user
+        color: Colours.palette.m3onSurfaceVariant
+        font.pointSize: Math.floor(Tokens.font.size.large * root.centerScale)
+        font.family: Tokens.font.family.sans
+        font.bold: true
+    }
+
     StyledRect {
         Layout.alignment: Qt.AlignHCenter
 

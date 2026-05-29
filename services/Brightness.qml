@@ -48,20 +48,23 @@ Singleton {
     }
 
     function increaseBrightness(): void {
-        const monitor = getMonitor("active");
-        if (monitor)
-            monitor.setBrightness(monitor.brightness + GlobalConfig.services.brightnessIncrement);
+        for (const monitor of monitors)
+            monitor.setBrightness(monitor.uiBrightness + GlobalConfig.services.brightnessIncrement);
     }
 
     function decreaseBrightness(): void {
-        const monitor = getMonitor("active");
-        if (monitor)
-            monitor.setBrightness(monitor.brightness - GlobalConfig.services.brightnessIncrement);
+        for (const monitor of monitors)
+            monitor.setBrightness(monitor.uiBrightness - GlobalConfig.services.brightnessIncrement);
     }
 
     onMonitorsChanged: {
         ddcMonitors = [];
         ddcProc.running = true;
+    }
+
+    function applyGlobalBrightness(value: real): void {
+        for (const monitor of monitors)
+            monitor.setBrightness(value);
     }
 
     Variants {
@@ -115,7 +118,7 @@ Singleton {
 
         // Allows searching by active/model/serial/id/name
         function getFor(query: string): real {
-            return root.getMonitor(query)?.brightness ?? -1;
+            return root.getMonitor(query)?.uiBrightness ?? -1;
         }
 
         function set(value: string): string {
@@ -131,19 +134,19 @@ Singleton {
             let targetBrightness;
             if (value.endsWith("%-")) {
                 const percent = parseFloat(value.slice(0, -2));
-                targetBrightness = monitor.brightness - (percent / 100);
+                targetBrightness = monitor.uiBrightness - (percent / 100);
             } else if (value.startsWith("+") && value.endsWith("%")) {
                 const percent = parseFloat(value.slice(1, -1));
-                targetBrightness = monitor.brightness + (percent / 100);
+                targetBrightness = monitor.uiBrightness + (percent / 100);
             } else if (value.endsWith("%")) {
                 const percent = parseFloat(value.slice(0, -1));
                 targetBrightness = percent / 100;
             } else if (value.startsWith("+")) {
                 const increment = parseFloat(value.slice(1));
-                targetBrightness = monitor.brightness + increment;
+                targetBrightness = monitor.uiBrightness + increment;
             } else if (value.endsWith("-")) {
                 const decrement = parseFloat(value.slice(0, -1));
-                targetBrightness = monitor.brightness - decrement;
+                targetBrightness = monitor.uiBrightness - decrement;
             } else if (value.includes("%") || value.includes("-") || value.includes("+")) {
                 return `Invalid brightness format: ${value}\nExpected: 0.1, +0.1, 0.1-, 10%, +10%, 10%-`;
             } else {
@@ -155,7 +158,7 @@ Singleton {
 
             monitor.setBrightness(targetBrightness);
 
-            return `Set monitor ${monitor.modelData.name} brightness to ${+monitor.brightness.toFixed(2)}`;
+            return `Set monitor ${monitor.modelData.name} brightness to ${+monitor.uiBrightness.toFixed(2)}`;
         }
 
         target: "brightness"
@@ -169,8 +172,10 @@ Singleton {
         readonly property bool isDdc: ddcInfo !== null
         readonly property string busNum: ddcInfo?.busNum ?? ""
         readonly property bool isAppleDisplay: root.appleDisplayPresent && modelData.model.startsWith("StudioDisplay")
+        readonly property var screenConfig: GlobalConfig.forScreen(modelData.name)
         property real brightness
         property real queuedBrightness: NaN
+        property real uiBrightness
 
         readonly property Process initProc: Process {
             stdout: StdioCollector {
@@ -178,9 +183,11 @@ Singleton {
                     if (monitor.isAppleDisplay) {
                         const val = parseInt(text.trim());
                         monitor.brightness = val / 101;
+                        monitor.updateUiBrightness();
                     } else {
                         const [, , , cur, max] = text.split(" ");
                         monitor.brightness = parseInt(cur) / parseInt(max);
+                        monitor.updateUiBrightness();
                     }
                 }
             }
@@ -197,17 +204,21 @@ Singleton {
         }
 
         function setBrightness(value: real): void {
-            value = Math.max(0, Math.min(1, value));
-            const rounded = Math.round(value * 100);
+            const minValue = Math.max(0, Math.min(1, screenConfig.services.minBrightness));
+            const maxValue = Math.max(minValue, Math.min(1, screenConfig.services.maxBrightness));
+            const clamped = Math.max(0, Math.min(1, value));
+            const mapped = minValue + (maxValue - minValue) * clamped;
+            const rounded = Math.round(mapped * 100);
             if (Math.round(brightness * 100) === rounded)
                 return;
 
             if (isDdc && timer.running) {
-                queuedBrightness = value;
+                queuedBrightness = clamped;
                 return;
             }
 
-            brightness = value;
+            brightness = mapped;
+            uiBrightness = clamped;
 
             if (isAppleDisplay)
                 Quickshell.execDetached(["asdbctl", "set", rounded]);
@@ -218,6 +229,13 @@ Singleton {
 
             if (isDdc)
                 timer.restart();
+        }
+
+        function updateUiBrightness(): void {
+            const minValue = Math.max(0, Math.min(1, screenConfig.services.minBrightness));
+            const maxValue = Math.max(minValue, Math.min(1, screenConfig.services.maxBrightness));
+            const span = Math.max(0.0001, maxValue - minValue);
+            uiBrightness = Math.max(0, Math.min(1, (brightness - minValue) / span));
         }
 
         function initBrightness(): void {
@@ -231,7 +249,23 @@ Singleton {
             initProc.running = true;
         }
 
+        onBrightnessChanged: updateUiBrightness()
         onBusNumChanged: initBrightness()
-        Component.onCompleted: initBrightness()
+        Component.onCompleted: {
+            updateUiBrightness();
+            initBrightness();
+        }
+
+        readonly property Connections configConnections: Connections {
+            function onMinBrightnessChanged(): void {
+                monitor.updateUiBrightness();
+            }
+
+            function onMaxBrightnessChanged(): void {
+                monitor.updateUiBrightness();
+            }
+
+            target: monitor.screenConfig.services
+        }
     }
 }
