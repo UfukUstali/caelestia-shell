@@ -32,10 +32,24 @@
       caelestia-shell = pkgs.callPackage ./nix {
         rev = self.rev or self.dirtyRev;
         stdenv = pkgs.clangStdenv;
-        quickshell = inputs.quickshell.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
-          withX11 = false;
-          withI3 = false;
-        };
+        quickshell = let
+          base = inputs.quickshell.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
+            withX11 = false;
+            withI3 = false;
+          };
+          # Patch the source-building (unwrapped) derivation; the wrapper only
+          # copies its output, so patches must go here, not on `base`.
+          patched = base.unwrapped.overrideAttrs (old: {
+            patches = (old.patches or []) ++ [./nix/quickshell-notif-version.patch];
+          });
+        in
+          base.overrideAttrs (old: {
+            installPhase = ''
+              mkdir -p $out
+              cp -r ${patched}/* $out
+            '';
+            passthru = (old.passthru or {}) // {unwrapped = patched;};
+          });
         caelestia-cli = inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.default;
       };
       with-cli = caelestia-shell.override {withCli = true;};

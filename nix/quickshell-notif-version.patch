@@ -1,0 +1,18 @@
+Set QCoreApplication applicationVersion so the notification server reports a
+version string in org.freedesktop.Notifications.GetServerInformation.
+
+Without this, applicationVersion() is empty and GetServerInformation returns an
+empty version field, which some clients (e.g. Chrome) treat as an incomplete
+notification server. QS_VERSION is already available via build.hpp, which
+main.cpp already includes.
+
+--- a/src/launch/main.cpp
++++ b/src/launch/main.cpp
+@@ -111,6 +111,7 @@
+
+ int main(int argc, char** argv) {
+ 	QCoreApplication::setApplicationName("quickshell");
++	QCoreApplication::setApplicationVersion(QS_VERSION);
+
+ #if CRASH_HANDLER
+ 	qsCheckCrash(argc, argv);
