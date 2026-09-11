@@ -58,9 +58,33 @@ Scope {
         model: GlobalConfig.general.idle.timeouts
 
         IdleMonitor {
+            id: idleMonitor
+
             required property var modelData
+            property bool actionRan: false
+
+            function returnFromIdle(): void {
+                if (!actionRan)
+                    return;
+                actionRan = false;
+                root.handleIdleAction(modelData.returnAction);
+            }
+
+            function updateIdle(): void {
+                if (isIdle && enabled) {
+                    actionRan = true;
+                    root.handleIdleAction(modelData.idleAction);
+                } else {
+                    returnFromIdle();
+                }
+            }
 
             enabled: {
+                // Enabling creates a fresh Wayland idle notification, so this
+                // timeout starts once the compositor confirms the lock.
+                // Use secure because locked can miss its unlock notification.
+                if (modelData.onlyWhenLocked && !root.lock.lock.secure)
+                    return false;
                 if (!root.enabled || !(modelData.enabled ?? true))
                     return false;
                 if (modelData.inhibitWhenAudio && root.hasPlayer)
@@ -71,7 +95,11 @@ Scope {
             }
             timeout: modelData.timeout
             respectInhibitors: modelData.respectInhibitors ?? true
-            onIsIdleChanged: root.handleIdleAction(isIdle ? modelData.idleAction : modelData.returnAction)
+            onIsIdleChanged: updateIdle()
+            onEnabledChanged: {
+                if (!enabled)
+                    returnFromIdle();
+            }
         }
     }
 }

@@ -1,60 +1,35 @@
 import QtQuick
 import QtQuick.Layouts
 import Caelestia.Config
-import qs.components
-import qs.services
 
 RowLayout {
     id: root
 
     required property var lock
+    required property real baseWidth
+    readonly property real preferredWidth: baseWidth + (weather.showForecast ? Math.max(0, baseWidth - center.centerWidth - spacing * 2) * 0.25 : 0)
 
     spacing: Tokens.spacing.largeIncreased * 2
 
-    ColumnLayout {
+    WeatherInfo {
+        id: weather
+
         Layout.fillWidth: true
-        spacing: Tokens.spacing.medium
-
-        WeatherInfo {
-            Layout.fillWidth: true
-            rootHeight: root.height
-        }
-
-        Fetch {
-            Layout.fillWidth: true
-            rootHeight: root.height
-        }
-
-        Media {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            lock: root.lock
-        }
+        Layout.preferredWidth: 1
+        Layout.alignment: Qt.AlignVCenter
+        rootHeight: root.height
     }
 
     Center {
+        id: center
+
         lock: root.lock
     }
 
-    ColumnLayout {
+    Media {
         Layout.fillWidth: true
-        spacing: Tokens.spacing.medium
-
-        Resources {
-            Layout.fillWidth: true
-        }
-
-        StyledRect {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-
-            bottomRightRadius: Tokens.rounding.extraLarge
-            radius: Tokens.rounding.medium
-            color: Colours.tPalette.m3surfaceContainer
-
-            NotifDock {
-                lock: root.lock
-            }
-        }
+        Layout.preferredWidth: 1
+        Layout.alignment: Qt.AlignVCenter
+        lock: root.lock
     }
 }

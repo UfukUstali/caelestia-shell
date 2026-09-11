@@ -13,6 +13,7 @@ PersistentProperties {
     property bool sidebar
 
     // Dashboard state
+    property bool workspaceKeyboardFocus
     property int dashboardTab
     property date dashboardDate: new Date()
 }

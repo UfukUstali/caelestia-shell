@@ -14,7 +14,7 @@ Item {
         return metrics.tightBoundingRect.y - metrics.boundingRect.y;
     }
 
-    implicitWidth: hours.implicitWidth + minutes.implicitWidth + Tokens.spacing.small
+    implicitWidth: hours.implicitWidth + separator.implicitWidth + minutes.implicitWidth + Tokens.spacing.small * 2
     implicitHeight: hourMetrics.tightBoundingRect.height
 
     StyledText {
@@ -31,6 +31,18 @@ Item {
             text: hours.text
             font: hours.font
         }
+    }
+
+    StyledText {
+        id: separator
+
+        anchors.left: hours.right
+        anchors.leftMargin: Tokens.spacing.small
+        anchors.baseline: minutes.baseline
+
+        text: ":"
+        color: Colours.palette.m3onSurfaceVariant
+        font: minutes.font
     }
 
     StyledText {

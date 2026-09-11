@@ -71,10 +71,16 @@ PageBase {
         }
 
         ToggleRow {
-            last: true
             text: Tr.tr("Weather")
             checked: Config.dashboard.showWeather
             onToggled: GlobalConfig.dashboard.showWeather = checked
+        }
+
+        ToggleRow {
+            last: true
+            text: Tr.tr("Workspace")
+            checked: Config.dashboard.showWorkspace
+            onToggled: GlobalConfig.dashboard.showWorkspace = checked
         }
 
         // Performance widgets

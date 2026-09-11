@@ -38,11 +38,7 @@ WlSessionLockSurface {
                 properties: "implicitWidth,implicitHeight"
                 to: lockContent.size
             }
-            Anim {
-                target: lockBg
-                property: "radius"
-                to: lockContent.radius
-            }
+
             Anim {
                 target: content
                 property: "scale"
@@ -136,11 +132,7 @@ WlSessionLockSurface {
                     property: "scale"
                     to: 1
                 }
-                Anim {
-                    target: lockBg
-                    property: "radius"
-                    to: lockContent.Tokens.rounding.extraLarge * 1.5
-                }
+
                 Anim {
                     target: lockContent
                     property: "implicitWidth"
@@ -206,22 +198,6 @@ WlSessionLockSurface {
         rotation: 180
         scale: 0
 
-        StyledRect {
-            id: lockBg
-
-            anchors.fill: parent
-            color: Colours.palette.m3surface
-            radius: parent.radius
-            opacity: Colours.transparency.enabled ? Colours.transparency.base : 1
-
-            layer.enabled: true
-            layer.effect: MultiEffect {
-                shadowEnabled: true
-                blurMax: 15
-                shadowColor: Qt.alpha(Colours.palette.m3shadow, 0.7)
-            }
-        }
-
         MaterialIcon {
             id: lockIcon
 
@@ -235,7 +211,8 @@ WlSessionLockSurface {
             id: content
 
             anchors.centerIn: parent
-            width: (root.screen?.height ?? 0) * Tokens.sizes.lock.heightMult * Tokens.sizes.lock.ratio - Tokens.padding.extraLargeIncreased
+            baseWidth: (root.screen?.height ?? 0) * Tokens.sizes.lock.heightMult * Tokens.sizes.lock.ratio - Tokens.padding.extraLargeIncreased
+            width: Math.min(preferredWidth, Math.max(0, (root.screen?.width ?? 0) - Tokens.padding.extraLargeIncreased * 2))
             height: (root.screen?.height ?? 0) * Tokens.sizes.lock.heightMult - Tokens.padding.extraLargeIncreased
 
             lock: root

@@ -41,6 +41,12 @@ Item {
                 iconName: "cloud",
                 text: Tr.tr("Weather"),
                 enabled: Config.dashboard.showWeather
+            },
+            {
+                component: workspaceComponent,
+                iconName: "overview",
+                text: Tr.tr("Workspace"),
+                enabled: Config.dashboard.showWorkspace
             }
         ];
         return allTabs.filter(tab => tab.enabled);
@@ -89,6 +95,7 @@ Item {
 
             anchors.fill: parent
 
+            interactive: view.currentItem?.modelData.component !== workspaceComponent
             flickableDirection: Flickable.HorizontalFlick
 
             implicitWidth: currentItem?.implicitWidth ?? 0
@@ -180,6 +187,15 @@ Item {
                 id: weatherComponent
 
                 WeatherTab {}
+            }
+
+            Component {
+                id: workspaceComponent
+
+                Workspace {
+                    screenState: root.screenState
+                    paneActive: root.dashboardTabs[root.screenState.dashboardTab]?.component === workspaceComponent
+                }
             }
 
             Behavior on contentX {

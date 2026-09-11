@@ -40,10 +40,32 @@
       caelestia-shell = pkgs.callPackage ./nix {
         rev = self.rev or self.dirtyRev;
         stdenv = pkgs.clangStdenv;
-        quickshell = inputs.quickshell.packages.${system}.default.override {
-          withX11 = false;
-          withI3 = false;
-        };
+        quickshell = let
+          base = inputs.quickshell.packages.${system}.default.override {
+            withX11 = false;
+            withI3 = false;
+          };
+          # Remove when the pinned source includes Quickshell PR #890.
+          patched = base.unwrapped.overrideAttrs (old: {
+            patches = (old.patches or []) ++ [./nix/quickshell-notif-version.patch];
+          });
+          # withModules closes over upstream's wrapper. Reapply the patched
+          # source when nix/default.nix adds imageformats and m3shapes.
+          wrap = modules:
+            (base.withModules modules).overrideAttrs (old: {
+              installPhase = ''
+                mkdir -p $out
+                cp -r ${patched}/* $out
+              '';
+              passthru =
+                (old.passthru or {})
+                // {
+                  unwrapped = patched;
+                  withModules = extra: wrap (modules ++ extra);
+                };
+            });
+        in
+          wrap [];
         caelestia-cli = inputs.caelestia-cli.packages.${system}.default;
         m3shapes = inputs.m3shapes.packages.${system}.default;
       };

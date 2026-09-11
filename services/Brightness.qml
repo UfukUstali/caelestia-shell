@@ -19,6 +19,44 @@ Singleton {
     }
     readonly property list<Monitor> monitors: variants.instances // qmllint disable incompatible-type
     property bool appleDisplayPresent: false
+    property real brightness: 0
+    property bool brightnessInitialized: false
+    property bool brightnessRequested: false
+
+    function applyGlobalBrightness(value: real): void {
+        if (!isFinite(value))
+            return;
+        brightness = Math.max(0, Math.min(1, value));
+        brightnessInitialized = true;
+        brightnessRequested = true;
+        for (const monitor of monitors)
+            monitor.setBrightness(brightness);
+    }
+
+    function seedBrightness(value: real): void {
+        // Read the first available display without changing hardware at startup.
+        if (!brightnessInitialized && isFinite(value)) {
+            brightness = value;
+            brightnessInitialized = true;
+        }
+    }
+
+    function parseDdcMonitors(output: string): var {
+        const found = [];
+        for (const block of output.trim().split(/\n\s*\n/)) {
+            // ddcutil also reports invalid displays, including laptop panels.
+            if (!block.startsWith("Display "))
+                continue;
+            const bus = block.match(/I2C bus:\s*\/dev\/i2c-([0-9]+)/);
+            const connector = block.match(/DRM connector:\s*(.+)/);
+            if (bus && connector)
+                found.push({
+                    busNum: bus[1],
+                    connector: connector[1].trim().replace(/^card\d+-/, "")
+                });
+        }
+        return found;
+    }
 
     function getMonitorForScreen(screen: ShellScreen): var {
         return monitors.find(m => m.modelData === screen); // qmllint disable missing-property
@@ -48,15 +86,11 @@ Singleton {
     }
 
     function increaseBrightness(): void {
-        const monitor = getMonitor("active");
-        if (monitor)
-            monitor.setBrightness(monitor.brightness + GlobalConfig.services.brightnessIncrement);
+        applyGlobalBrightness(brightness + GlobalConfig.services.brightnessIncrement);
     }
 
     function decreaseBrightness(): void {
-        const monitor = getMonitor("active");
-        if (monitor)
-            monitor.setBrightness(monitor.brightness - GlobalConfig.services.brightnessIncrement);
+        applyGlobalBrightness(brightness - GlobalConfig.services.brightnessIncrement);
     }
 
     onMonitorsChanged: {
@@ -85,10 +119,7 @@ Singleton {
 
         command: ["ddcutil", "detect", "--brief"]
         stdout: StdioCollector {
-            onStreamFinished: root.ddcMonitors = text.trim().split("\n\n").filter(d => d.startsWith("Display ")).map(d => ({
-                        busNum: d.match(/I2C bus:[ ]*\/dev\/i2c-([0-9]+)/)[1],
-                        connector: d.match(/DRM connector:\s+(.*)/)[1].replace(/^card\d+-/, "") // strip "card1-"
-                    }))
+            onStreamFinished: root.ddcMonitors = root.parseDdcMonitors(text)
         }
     }
 
@@ -110,52 +141,57 @@ Singleton {
 
     IpcHandler {
         function get(): real {
-            return getFor("active");
+            return root.brightness;
         }
 
         // Allows searching by active/model/serial/id/name
         function getFor(query: string): real {
-            return root.getMonitor(query)?.brightness ?? -1;
+            return root.getMonitor(query)?.uiBrightness ?? -1;
         }
 
         function set(value: string): string {
-            return setFor("active", value);
+            return setFor("all", value);
         }
 
         // Handles brightness value like brightnessctl: 0.1, +0.1, 0.1-, 10%, +10%, 10%-
         function setFor(query: string, value: string): string {
-            const monitor = root.getMonitor(query);
-            if (!monitor)
+            const all = query === "all";
+            const monitor = all ? null : root.getMonitor(query);
+            if (!all && !monitor)
                 return "Invalid monitor: " + query;
 
+            const current = all ? root.brightness : monitor.uiBrightness;
             let targetBrightness;
             if (value.endsWith("%-")) {
                 const percent = parseFloat(value.slice(0, -2));
-                targetBrightness = monitor.brightness - (percent / 100);
+                targetBrightness = current - (percent / 100);
             } else if (value.startsWith("+") && value.endsWith("%")) {
                 const percent = parseFloat(value.slice(1, -1));
-                targetBrightness = monitor.brightness + (percent / 100);
+                targetBrightness = current + (percent / 100);
             } else if (value.endsWith("%")) {
                 const percent = parseFloat(value.slice(0, -1));
                 targetBrightness = percent / 100;
             } else if (value.startsWith("+")) {
                 const increment = parseFloat(value.slice(1));
-                targetBrightness = monitor.brightness + increment;
+                targetBrightness = current + increment;
             } else if (value.endsWith("-")) {
                 const decrement = parseFloat(value.slice(0, -1));
-                targetBrightness = monitor.brightness - decrement;
+                targetBrightness = current - decrement;
             } else if (value.includes("%") || value.includes("-") || value.includes("+")) {
                 return `Invalid brightness format: ${value}\nExpected: 0.1, +0.1, 0.1-, 10%, +10%, 10%-`;
             } else {
                 targetBrightness = parseFloat(value);
             }
 
-            if (isNaN(targetBrightness))
+            if (!isFinite(targetBrightness))
                 return `Failed to parse value: ${value}\nExpected: 0.1, +0.1, 0.1-, 10%, +10%, 10%-`;
 
+            if (all) {
+                root.applyGlobalBrightness(targetBrightness);
+                return `Set all monitors brightness to ${+root.brightness.toFixed(2)}`;
+            }
             monitor.setBrightness(targetBrightness);
-
-            return `Set monitor ${monitor.modelData.name} brightness to ${+monitor.brightness.toFixed(2)}`;
+            return `Set monitor ${monitor.modelData.name} brightness to ${+monitor.uiBrightness.toFixed(2)}`;
         }
 
         target: "brightness"
@@ -169,69 +205,116 @@ Singleton {
         readonly property bool isDdc: ddcInfo !== null
         readonly property string busNum: ddcInfo?.busNum ?? ""
         readonly property bool isAppleDisplay: root.appleDisplayPresent && modelData.model.startsWith("StudioDisplay")
-        property real brightness
-        property real queuedBrightness: NaN
+        // Only built-in panels may use the system backlight. An undetected
+        // external monitor must never write to the laptop's backlight.
+        readonly property bool isBacklight: /^(eDP|LVDS|DSI)-/.test(modelData.name)
+        readonly property string backend: isAppleDisplay ? "apple" : isDdc ? "ddc:" + busNum : isBacklight ? "backlight" : ""
+        readonly property var screenConfig: GlobalConfig.forScreen(modelData.name)
+        readonly property real minBrightness: Math.max(0, Math.min(1, screenConfig.services.minBrightness))
+        readonly property real maxBrightness: Math.max(minBrightness, Math.min(1, screenConfig.services.maxBrightness))
+        property real uiBrightness: 0
+        property real brightness: NaN
+        property bool requested: false
+        property bool pending: false
 
         readonly property Process initProc: Process {
             stdout: StdioCollector {
                 onStreamFinished: {
                     if (monitor.isAppleDisplay) {
-                        const val = parseInt(text.trim());
-                        monitor.brightness = val / 101;
+                        monitor.acceptInitialBrightness(parseInt(text.trim()) / 101);
                     } else {
-                        const [, , , cur, max] = text.split(" ");
-                        monitor.brightness = parseInt(cur) / parseInt(max);
+                        const [, , , cur, max] = text.trim().split(/\s+/);
+                        monitor.acceptInitialBrightness(parseInt(cur) / parseInt(max));
                     }
                 }
+            }
+            onExited: () => Qt.callLater(monitor.flushBrightness)
+            // qmllint disable signal-handler-parameters
+        }
+
+        readonly property Process writeProc: Process {
+            onExited: code => { // qmllint disable signal-handler-parameters
+                if (code !== 0) {
+                    monitor.brightness = NaN;
+                    console.warn("Failed to set brightness for", monitor.modelData.name, code);
+                }
+                if (monitor.isDdc)
+                    monitor.timer.restart();
+                else
+                    Qt.callLater(monitor.flushBrightness);
             }
         }
 
         readonly property Timer timer: Timer {
             interval: 500
-            onTriggered: {
-                if (!isNaN(monitor.queuedBrightness)) {
-                    monitor.setBrightness(monitor.queuedBrightness);
-                    monitor.queuedBrightness = NaN;
-                }
-            }
+            onTriggered: monitor.flushBrightness()
+        }
+
+        function acceptInitialBrightness(value: real): void {
+            if (!isFinite(value) || requested)
+                return;
+            brightness = Math.max(0, Math.min(1, value));
+            const span = maxBrightness - minBrightness;
+            uiBrightness = span > 0 ? Math.max(0, Math.min(1, (brightness - minBrightness) / span)) : 0;
+            root.seedBrightness(uiBrightness);
         }
 
         function setBrightness(value: real): void {
-            value = Math.max(0, Math.min(1, value));
-            const rounded = Math.round(value * 100);
+            if (!isFinite(value))
+                return;
+            // Keep the latest logical request, even if hardware rounds it away
+            // or an earlier DDC write is still running.
+            uiBrightness = Math.max(0, Math.min(1, value));
+            requested = true;
+            pending = true;
+            flushBrightness();
+        }
+
+        function flushBrightness(): void {
+            if (!pending || !backend || initProc.running || writeProc.running || timer.running)
+                return;
+            const mapped = minBrightness + (maxBrightness - minBrightness) * uiBrightness;
+            const rounded = Math.round(mapped * 100);
+            pending = false;
             if (Math.round(brightness * 100) === rounded)
                 return;
-
-            if (isDdc && timer.running) {
-                queuedBrightness = value;
-                return;
-            }
-
-            brightness = value;
-
+            brightness = rounded / 100;
             if (isAppleDisplay)
-                Quickshell.execDetached(["asdbctl", "set", rounded]);
+                writeProc.command = ["asdbctl", "set", rounded];
             else if (isDdc)
-                Quickshell.execDetached(["ddcutil", "-b", busNum, "setvcp", "10", rounded]);
+                writeProc.command = ["ddcutil", "-b", busNum, "setvcp", "10", rounded];
             else
-                Quickshell.execDetached(["brightnessctl", "s", `${rounded}%`]);
-
-            if (isDdc)
-                timer.restart();
+                writeProc.command = ["brightnessctl", "-c", "backlight", "s", `${rounded}%`];
+            writeProc.running = true;
         }
 
         function initBrightness(): void {
+            if (!backend || initProc.running || writeProc.running)
+                return;
+            brightness = NaN;
+            if (root.brightnessRequested) {
+                setBrightness(root.brightness);
+                return;
+            }
             if (isAppleDisplay)
                 initProc.command = ["asdbctl", "get"];
             else if (isDdc)
                 initProc.command = ["ddcutil", "-b", busNum, "getvcp", "10", "--brief"];
             else
-                initProc.command = ["sh", "-c", "echo a b c $(brightnessctl g) $(brightnessctl m)"];
-
+                initProc.command = ["sh", "-c", "echo a b c $(brightnessctl -c backlight g) $(brightnessctl -c backlight m)"];
             initProc.running = true;
         }
 
-        onBusNumChanged: initBrightness()
-        Component.onCompleted: initBrightness()
+        function updateBounds(): void {
+            if (requested)
+                setBrightness(uiBrightness);
+            else
+                acceptInitialBrightness(brightness);
+        }
+
+        onMinBrightnessChanged: updateBounds()
+        onMaxBrightnessChanged: updateBounds()
+        onBackendChanged: Qt.callLater(initBrightness)
+        Component.onCompleted: Qt.callLater(initBrightness)
     }
 }

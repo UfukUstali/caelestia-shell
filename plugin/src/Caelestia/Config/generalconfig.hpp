@@ -38,11 +38,13 @@ class GeneralIdle : public settings::ObjectNode {
             vmap({
                 { u"timeout"_s, 300 },
                 { u"idleAction"_s, u"dpms off"_s },
+                { u"onlyWhenLocked"_s, true },
                 { u"returnAction"_s, u"dpms on"_s },
             }),
             vmap({
                 { u"timeout"_s, 600 },
                 { u"idleAction"_s, QStringList{ u"suspendThenHibernate"_s } },
+                { u"onlyWhenLocked"_s, true },
             }),
         }))
 };
@@ -81,8 +83,6 @@ class GeneralConfig : public settings::ObjectNode {
     CONFIG_GLOBAL_PROPERTY(QString, logo, QString())
     CONFIG_GLOBAL_PROPERTY(QString, language, QString())
     CONFIG_PROPERTY(bool, showOverFullscreen, false)
-    CONFIG_PROPERTY(qreal, mediaGifSpeedAdjustment, 300)
-    CONFIG_PROPERTY(qreal, sessionGifSpeed, 0.7)
     CONFIG_SUBOBJECT(GeneralApps, apps)
     CONFIG_SUBOBJECT(GeneralIdle, idle)
     CONFIG_SUBOBJECT(GeneralBattery, battery)

@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Caelestia.Config
 import qs.components
 import qs.services
+import qs.utils
 
 ColumnLayout {
     id: root
@@ -37,6 +38,14 @@ ColumnLayout {
         Layout.topMargin: Tokens.spacing.extraExtraLarge * root.centerScale
         Layout.bottomMargin: Tokens.spacing.extraLarge * root.centerScale
         centerWidth: root.centerWidth
+    }
+
+    StyledText {
+        Layout.alignment: Qt.AlignHCenter
+
+        text: SysInfo.user
+        color: Colours.palette.m3onSurfaceVariant
+        font: Tokens.font.title.builders.medium.weight(Font.DemiBold).build()
     }
 
     PasswordInput {

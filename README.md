@@ -12,6 +12,8 @@
 
 https://github.com/user-attachments/assets/0840f496-575c-4ca6-83a8-87bb01a85c5f
 
+This fork’s behavior and migration notes are in [CUSTOMIZATIONS.md](CUSTOMIZATIONS.md).
+
 ## Components
 
 -   Widgets: [`Quickshell`](https://quickshell.outfoxxed.me)
@@ -324,8 +326,6 @@ For example, to automatically hide the bar on the monitor named `DP-1`:
     "general": {
         "logo": "",
         "showOverFullscreen": false,
-        "mediaGifSpeedAdjustment": 300,
-        "sessionGifSpeed": 0.7,
         "apps": {
             "terminal": ["foot"],
             "audio": ["pwvucontrol"],
@@ -347,11 +347,13 @@ For example, to automatically hide the bar on the monitor named `DP-1`:
                 {
                     "timeout": 300,
                     "idleAction": "dpms off",
+                    "onlyWhenLocked": true,
                     "returnAction": "dpms on"
                 },
                 {
                     "timeout": 600,
-                    "idleAction": ["suspendThenHibernate"]
+                    "idleAction": ["suspendThenHibernate"],
+                    "onlyWhenLocked": true
                 }
             ]
         },
@@ -731,6 +733,8 @@ For example, to automatically hide the bar on the monitor named `DP-1`:
         "visualiserBars": 60,
         "audioIncrement": 0.1,
         "brightnessIncrement": 0.1,
+        "minBrightness": 0.0,
+        "maxBrightness": 1.0,
         "maxVolume": 1.0,
         "smartScheme": true,
         "defaultPlayer": "Spotify",
@@ -823,8 +827,6 @@ For example, to automatically hide the bar on the monitor named `DP-1`:
     "paths": {
         "wallpaperDir": "~/Pictures/Wallpapers",
         "lyricsDir": "~/Music/lyrics/",
-        "sessionGif": "root:/assets/kurukuru.gif",
-        "mediaGif": "root:/assets/bongocat.gif",
         "noNotifsPic": "root:/assets/dino.png",
         "lockNoNotifsPic": "root:/assets/dino.png"
     }

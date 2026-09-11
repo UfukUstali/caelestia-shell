@@ -11,9 +11,18 @@ import qs.utils
 StyledRect {
     id: root
 
+    readonly property real itemWidth: Math.max(Tokens.sizes.lock.forecastItemWidth, hourLabelMetrics.width + Tokens.padding.medium * 2)
+
     color: Colours.layer(Colours.palette.m3surfaceContainerHigh, 2)
     radius: Tokens.rounding.extraLargeIncreased
     implicitHeight: header.anchors.margins + header.implicitHeight + Tokens.spacing.medium + layout.implicitHeight + layout.anchors.bottomMargin
+
+    TextMetrics {
+        id: hourLabelMetrics
+
+        text: GlobalConfig.services.useTwelveHourClock ? "12pm" : "00:00"
+        font: Tokens.font.body.medium
+    }
 
     RowLayout {
         id: header
@@ -47,10 +56,10 @@ StyledRect {
         anchors.bottomMargin: Tokens.padding.largeIncreased
         anchors.margins: Tokens.padding.large
 
-        spacing: Tokens.spacing.small
+        spacing: Tokens.spacing.medium
 
         Repeater {
-            model: CUtils.clamp(Math.floor((layout.width + layout.spacing) / (Tokens.sizes.lock.forecastItemWidth + layout.spacing)), 0, Weather.hourlyForecast.length)
+            model: CUtils.clamp(Math.floor((layout.width + layout.spacing) / (root.itemWidth + layout.spacing)), 0, Weather.hourlyForecast.length)
 
             ColumnLayout {
                 id: hour
